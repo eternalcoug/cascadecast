@@ -339,7 +339,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       console.error('❌ Reverse geocoding error:', error);
       const coordString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
       onLocationSelect(coordString, { lat, lon });
-      throw error; // Re-throw to handle in calling function
+      // Don't re-throw - we've already handled it with fallback coordinates
     }
   };
 
