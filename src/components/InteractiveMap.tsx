@@ -297,37 +297,50 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const reverseGeocode = async (lat: number, lon: number) => {
     try {
       console.log('🔍 Reverse geocoding:', lat, lon);
-      
+
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-      
+
       if (apiKey) {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`,
-          { timeout: 10000 } // 10 second timeout
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.results && data.results.length > 0) {
-            const address = data.results[0].formatted_address;
-            console.log('📍 Geocoded address:', address);
-            onLocationSelect(address, { lat, lon });
-            return;
+        // Use AbortController for timeout (fetch doesn't support timeout option)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        try {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`,
+            { signal: controller.signal }
+          );
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.results && data.results.length > 0) {
+              const address = data.results[0].formatted_address;
+              console.log('📍 Geocoded address:', address);
+              onLocationSelect(address, { lat, lon });
+              return;
+            }
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            console.warn('⏱️ Reverse geocoding timed out, using coordinates');
+          } else {
+            throw fetchError;
           }
         }
       }
-      
+
       // Fallback to coordinates if geocoding fails
       const coordString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
       console.log('📍 Using coordinates as fallback:', coordString);
       onLocationSelect(coordString, { lat, lon });
     } catch (error) {
-  console.error('❌ Reverse geocoding error:', error);
-  // Fallback to coordinates - don't throw, just use what we have
-  const coordString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-  onLocationSelect(coordString, { lat, lon });
-  // Don't re-throw since we handled it with the fallback
-}
+      console.error('❌ Reverse geocoding error:', error);
+      const coordString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      onLocationSelect(coordString, { lat, lon });
+      throw error; // Re-throw to handle in calling function
+    }
   };
 
   // Get user's current location
