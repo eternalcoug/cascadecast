@@ -322,11 +322,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       console.log('📍 Using coordinates as fallback:', coordString);
       onLocationSelect(coordString, { lat, lon });
     } catch (error) {
-      console.error('❌ Reverse geocoding error:', error);
-      const coordString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-      onLocationSelect(coordString, { lat, lon });
-      throw error; // Re-throw to handle in calling function
-    }
+  console.error('❌ Reverse geocoding error:', error);
+  // Fallback to coordinates - don't throw, just use what we have
+  const coordString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  onLocationSelect(coordString, { lat, lon });
+  // Don't re-throw since we handled it with the fallback
+}
   };
 
   // Get user's current location
@@ -409,10 +410,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               setIsGettingLocation(false);
             })
             .catch((error) => {
-              console.error('Reverse geocoding failed:', error);
-              logError(error as Error, 'getCurrentLocation', { step: 'reverse_geocode' });
-              setIsGettingLocation(false);
-            });
+  console.error('Reverse geocoding failed:', error);
+  logError(error as Error, 'getCurrentLocation', { step: 'reverse_geocode' });
+  setError('Unable to determine your location address. Using coordinates instead.');
+  setIsGettingLocation(false);
+});
         },
         (error) => {
           console.error('Geolocation error:', error);
