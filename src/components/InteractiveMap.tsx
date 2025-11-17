@@ -458,9 +458,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           setIsGettingLocation(false);
         },
         {
-          enableHighAccuracy: true,
-          timeout: 30000, // 30 seconds timeout
-          maximumAge: 300000 // 5 minutes cache
+          enableHighAccuracy: false, // Use false for better compatibility across devices
+          timeout: 10000, // 10 seconds timeout (faster for production)
+          maximumAge: 0 // Don't use cached position for accuracy
         }
       );
     } catch (error) {
